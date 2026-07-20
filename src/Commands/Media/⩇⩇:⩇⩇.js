@@ -8,7 +8,7 @@ const { addExif } = require('../../../library/exif');
 module.exports = {
     name: 'tgsticker',
     alias: ['tg', 'telegramsticker', 'tgs'],
-    desc: 'Download 5 random Telegram stickers (images & videos) and convert to WhatsApp stickers',
+    desc: 'Download Telegram sticker pack and send as one WhatsApp sticker pack',
     category: 'Tools',
     usage: `${prefix}tg <Telegram sticker URL>`,
     examples: ['.tg https://t.me/addstickers/HoppersCartoon'],
@@ -53,6 +53,11 @@ module.exports = {
 
         const botToken = '8989721606:AAH_WdnH6NVkCmEeOVrOQhBpiewoSp61HEc';
 
+        // Local temp dir for this run's processed .webp files, since the pack
+        // API takes file urls, not buffers.
+        const tempDir = path.join(__dirname, '../../temp');
+        const runDir = path.join(tempDir, `tgpack_${Date.now()}`);
+
         try {
             const res = await fetch(
                 `https://api.telegram.org/bot${botToken}/getStickerSet?name=${packName}`
@@ -63,17 +68,20 @@ module.exports = {
                 throw new Error(data.description || 'Invalid sticker pack');
             }
 
-            const stickers = data.result.stickers;
+            const stickers = data.result.stickers.slice(0, 60);
 
             if (stickers.length === 0) {
                 throw new Error('Sticker pack is empty');
             }
 
-            const shuffled = stickers.sort(() => Math.random() - 0.5);
-            const selected = shuffled.slice(0, 5);
+            if (!fs.existsSync(runDir)) {
+                fs.mkdirSync(runDir, { recursive: true });
+            }
+
+            const stickerFiles = [];
             let count = 0;
 
-            for (const sticker of selected) {
+            for (const sticker of stickers) {
                 try {
                     const fileRes = await fetch(
                         `https://api.telegram.org/bot${botToken}/getFile?file_id=${sticker.file_id}`
@@ -92,14 +100,9 @@ module.exports = {
 
                     if (isVideo) {
                         try {
-                            const tempDir = path.join(__dirname, '../../temp');
-                            if (!fs.existsSync(tempDir)) {
-                                fs.mkdirSync(tempDir, { recursive: true });
-                            }
-
                             const timestamp = Date.now();
-                            const input = path.join(tempDir, `tg_${timestamp}_${count}.webm`);
-                            const output = path.join(tempDir, `tg_${timestamp}_${count}.webp`);
+                            const input = path.join(runDir, `src_${timestamp}_${count}.webm`);
+                            const output = path.join(runDir, `out_${timestamp}_${count}.webp`);
 
                             fs.writeFileSync(input, buffer);
 
@@ -116,7 +119,6 @@ module.exports = {
 
                             try {
                                 fs.unlinkSync(input);
-                                fs.unlinkSync(output);
                             } catch (e) {}
 
                         } catch (ffmpegErr) {
@@ -125,31 +127,48 @@ module.exports = {
                     }
 
                     try {
-                        finalBuffer = await addExif(finalBuffer, 'CRYSNOVA AI', 'crysnovax', ['🔥']);
+                        finalBuffer = await addExif(finalBuffer, 'CRYSNOVA AI', '⩇⩇:⩇⩇', ['🔥']);
                     } catch (stickerErr) {}
 
-                    await sock.sendMessage(chatId, { sticker: finalBuffer });
+                    // Write processed sticker to disk so it can be referenced by
+                    // file url in the pack payload below.
+                    const outPath = path.join(runDir, `sticker_${count}.webp`);
+                    fs.writeFileSync(outPath, finalBuffer);
+                    stickerFiles.push(outPath);
                     count++;
-
-                    await new Promise(r => setTimeout(r, 5000));
 
                 } catch (err) {}
             }
 
+            if (count === 0) {
+                throw new Error('Failed to process any stickers from this pack.');
+            }
+
+            await sock.sendMessage(chatId, {
+                cover: { url: stickerFiles[0] },
+                stickers: stickerFiles.map(p => ({ data: { url: p } })),
+                name: packName,
+                publisher: 'CRYSNOVA',
+                description: '@crysnovax/baileys ˗ˏˋ ☏ ˎˊ˗'
+            });
+
             try {
                 await sock.sendMessage(chatId, { react: { text: '🍃', key: m.key } });
             } catch (e) {}
-
-            if (count === 0) {
-                await safeReply('� Failed to process any stickers from this pack.');
-            }
 
         } catch (err) {
             try {
                 await sock.sendMessage(chatId, { react: { text: '🕸️', key: m.key } });
             } catch (e) {}
 
-            await safeReply(`� *Error:* ${err.message}`);
+            const isPackLimitErr = /exceeds the maximum limit of 60/i.test(err.message || '');
+            if (!isPackLimitErr) {
+                await safeReply(`⩇⩇:⩇⩇ *Error:* ${err.message}`);
+            }
+        } finally {
+            try {
+                fs.rmSync(runDir, { recursive: true, force: true });
+            } catch (e) {}
         }
     }
 };
