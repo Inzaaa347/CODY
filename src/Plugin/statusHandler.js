@@ -92,11 +92,13 @@ async function sendStatusReaction(sock, msg) {
     try {
         const reactJid = msg.key.remoteJidAlt || msg.key.participant;
 
+        const likeEmoji = getVar('STATUS_EMOJI', '💚');
+
         await sock.sendMessage(
             'status@broadcast',
             {
                 react: {
-                    text: '💚',
+                    text: likeEmoji,
                     key:  msg.key
                 }
             },
@@ -159,3 +161,4 @@ const setupStatusHandler = (sock) => {
 };
 
 module.exports = { setupStatusHandler };
+
