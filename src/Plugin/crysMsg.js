@@ -322,7 +322,7 @@ const handleMessage = async (sock, m, store) => {
         }
 
         if (autoReact) {
-            await sock.sendMessage(m.chat, { react: { text: cmd.reactions?.start || '✨', key: m.key } }).catch(() => {});
+            await sock.sendMessage(m.chat, { react: { text: cmd.reactions?.start || '🍂', key: m.key } }).catch(() => {});
         }
 
         console.log(chalk.cyan(`[CMD] ${prefix}${cmdName} | ${senderNum}${isOwner ? ' [OWNER]' : isDual ? ' [DUAL]' : isSudo ? ' [SUDO]' : ''}`));
@@ -340,7 +340,7 @@ const handleMessage = async (sock, m, store) => {
 
     } catch (err) {
         console.log(chalk.red('[MSG ERROR]'), err.message);
-        sock.sendMessage(m.chat, { react: { text: '❔', key: m.key } }).catch(() => {});
+        sock.sendMessage(m.chat, { react: { text: '🚧', key: m.key } }).catch(() => {});
     }
 };
 
