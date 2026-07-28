@@ -55,7 +55,7 @@ module.exports = {
     category: 'Owner',
     ownerOnly: true,
     desc: 'Post text or replied media to WhatsApp Status',
-    execute: async (sock, m, { args, reply, store }) => {
+    execute: async (sock, m, { args, reply, store, prefix }) => {
         try {
             const statusJidList = await buildStatusAudience(sock, store);
             if (!statusJidList.length) return reply('No valid WhatsApp contacts are available for the status audience.');
@@ -85,10 +85,10 @@ module.exports = {
             }
 
             await sock.sendMessage('status@broadcast', content);
-            return reply(`${prefix}Status posted successfully to ${statusJidListlength} contact${statusJidList.length === 1 ? '' : 's'}.`);
+            return reply(`${prefix}Status posted successfully to ${statusJidList.length} contact${statusJidList.length === 1 ? '' : 's'}.`);
         } catch (error) {
             console.error('[POSTSTORY ERROR]', error?.stack || error);
-            return reply(`${prefix}Failed to post the status: ${error?message || 'unknown WhatsApp error'}`);
+            return reply(`${prefix}Failed to post the status: ${error?.message || 'unknown WhatsApp error'}`);
         }
     },
     buildStatusAudience,
