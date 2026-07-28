@@ -9,9 +9,6 @@ const os = require('os');
 // Import font lab styles
 const fontLab = require('../Core/\'.js');
 
-// Import getFont from botfont.js (which is in Core folder)
-const { getFont } = require('./botfont.js');
-
 const DIVIDER = '─────────────';
 const READMORE = '\u200E'.repeat(625);
 
@@ -50,6 +47,9 @@ const DAY_ICONS = {
     'Saturday': '♪⁠',
     'Sunday': '☼'
 };
+
+// Hardcoded bot name with fancy35 styling - NO SPACES between letters
+const DEFAULT_BOT_NAME = '𝗖𝗢𝗗𝗬 𝗔𝗜';
 
 function getCategoryIcon(cat) {
     return CATEGORY_ICONS[cat.toLowerCase()] || '♧';
@@ -127,18 +127,21 @@ function getChatType(m) {
 }
 
 /**
- * Convert text to styled font using fancy41 (always)
- * fancy41 gives: 𝗖𝗢𝗗𝗬 𝗔𝗜
+ * Convert text to styled font using fancy35
+ * fancy35 gives: 𝗖𝗢𝗗𝗬 𝗔𝗜 (bold serif)
+ * IMPORTANT: NO spaces between characters - spaces break the font rendering
  */
 function toStyledName(text) {
-    if (!text) text = 'CODY AI';
+    if (!text || text.trim() === '') {
+        return DEFAULT_BOT_NAME;
+    }
     
     // Remove any markdown/formatting
     text = text.replace(/[*_~`]/g, '');
     
-    // Always use fancy41
-    if (fontLab.fancy41 && typeof fontLab.fancy41 === 'function') {
-        return fontLab.fancy41(text);
+    // Always use fancy35 - DO NOT add spaces between characters
+    if (fontLab.fancy35 && typeof fontLab.fancy35 === 'function') {
+        return fontLab.fancy35(text);
     }
     
     // Fallback: just return the text
@@ -157,8 +160,8 @@ module.exports = {
         const userName = await getUserName(sock, m);
         const userNum = getUserNumber(m);
         
-        // Get bot name from config and style it using fancy41
-        const rawBotName = config.settings?.title || 'CODY AI';
+        // Get bot name from config or use default
+        const rawBotName = config.settings?.title || '';
         const botName = toStyledName(rawBotName);
         
         const uptimeMin = Math.floor(process.uptime() / 60);
