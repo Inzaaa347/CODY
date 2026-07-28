@@ -208,7 +208,7 @@ module.exports = {
         for (const [catName, cmds] of Object.entries(categories)) {
             if (!cmds || cmds.length === 0) continue;
             const icon = getCategoryIcon(catName);
-            text += `\n𒆜 ⤷ *${catName.toUpperCase()}* ${icon}\n`;
+            text += `\n⌬ ⤷ *${catName.toUpperCase()}* ${icon}\n`;
             const seen = new Set();
             for (const cmd of cmds) {
                 const cmdName = cmd.cmd || cmd.name;
