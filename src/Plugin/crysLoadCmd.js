@@ -64,7 +64,7 @@ const loadCommands = () => {
                 }
 
             } catch (err) {
-            //    console.log(chalk.red(`[CMD ERROR] ${file}: ${err.message}`));
+                console.log(chalk.red(`[CMD ERROR] ${file}: ${err.message}`));
             }
         }
     }
